@@ -1,0 +1,23 @@
+# Build
+build/
+
+# Project description (not to be committed)
+projectDescription.txt
+
+# Original test data zip extract
+basic/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+__MACOSX/
+
+# Doxygen output
+docs/html/
+docs/latex/
