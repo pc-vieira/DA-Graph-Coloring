@@ -1,17 +1,8 @@
-cmake_minimum_required(VERSION 3.17)
-project(DA_Graph_Coloring)
+cmake_minimum_required(VERSION 3.20)
+project(DA_Register_Allocation)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(myProg
-    src/main.cpp
-    src/Parser.cpp
-    src/Web.cpp
-    src/WebBuilder.cpp
-    src/InterferenceGraph.cpp
-    src/GraphColoring.cpp
-    src/OutputWriter.cpp
-    src/Menu.cpp
-)
+include_directories(code/include)
 
-target_include_directories(myProg PRIVATE data_structures src)
+add_executable(DA_Register_Allocation code/src/main.cpp code/src/parser.cpp)
