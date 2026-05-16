@@ -41,7 +41,26 @@ cd build
 
 ## Running — Batch Mode
 
-This only runs the 6 given instances (the default datasets). If you want to run a custom instance without using the interactive menu, see the next section.
+**Linux / macOS**
+```bash
+cd build
+./DA_Register_Allocation -b <range path> <register path> <output path>
+```
+
+**Windows**
+```bat
+cd build
+.\DA_Register_Allocation.exe -b <range path> <register path> <output path>
+```
+
+Note: When using the command-line batch parameters, provide the full relative paths (e.g., `../data/ranges/ranges1.txt`).
+
+---
+
+
+## Running — Default Datasets Output Automatic Generation
+
+This only generates the output for the 6 given instances.
 
 **Linux / macOS**
 ```bash
@@ -56,24 +75,3 @@ bash batch.sh
 ```
 
 Without Git Bash or WSL, open `batch.sh` and run the commands it contains manually in a terminal.
-
----
-
-## Running — Custom Instances Via Terminal
-
-**Linux / macOS**
-```bash
-cd build
-./DA_Register_Allocation -b <range path> <register path> <output path>
-```
-
-**Windows**
-```bat
-cd build
-.\DA_Register_Allocation.exe -b <range path> <register path> <output path>
-```
-
-We suggest you follow this template for the paths:
-```
-../data/ranges/ranges1.txt
-```
