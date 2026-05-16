@@ -1,23 +1,22 @@
-# Build
+# CMake Build Directory
 build/
 
-# Project description (not to be committed)
-projectDescription.txt
+# Project Specific
+# Ignore generated output files but keep the directory tracked if you add a .gitkeep
+data/output/*.txt
 
-# Original test data zip extract
-basic/
+# OS Generated Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
-# IDE
+# IDEs and Editors
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
-
-# macOS
-.DS_Store
-__MACOSX/
-
-# Doxygen output
-docs/html/
-docs/latex/
