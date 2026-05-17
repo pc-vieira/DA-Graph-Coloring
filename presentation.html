@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compiler Register Allocation — DA 2026</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #111;
+    color: #111;
+    overflow: hidden;
+  }
+
+  .slideshow {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+  }
+
+  .slide {
+    display: none;
+    width: 100%;
+    height: 100%;
+    background: #fff;
+    padding: 60px 80px;
+    position: absolute;
+    top: 0; left: 0;
+  }
+
+  .slide.active { display: flex; flex-direction: column; justify-content: center; }
+
+  /* ── Title slide ── */
+  .slide-title {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+  .slide-title h1 {
+    font-size: 3.2rem;
+    font-weight: 700;
+    color: #111;
+    line-height: 1.15;
+    margin-bottom: 48px;
+  }
+  .slide-title .authors { font-size: 1.15rem; color: #444; line-height: 2.1; }
+
+  /* ── Shared layout ── */
+  .slide-body {
+    flex-direction: row !important;
+    align-items: flex-start;
+    gap: 60px;
+  }
+
+  .left-col { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+  .right-col { flex: 1.1; display: flex; flex-direction: column; justify-content: center; }
+
+  /* ── Section header ── */
+  .section-tag {
+    display: inline-block;
+    background: #e85c0d;
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 3px;
+    margin-bottom: 18px;
+    width: fit-content;
+  }
+
+  h2 {
+    font-size: 2.4rem;
+    font-weight: 700;
+    color: #111;
+    line-height: 1.15;
+    margin-bottom: 10px;
+  }
+
+  .underline {
+    width: 80px;
+    height: 4px;
+    background: #e85c0d;
+    border-radius: 2px;
+    margin-bottom: 28px;
+  }
+
+  /* ── Full-width title variant ── */
+  .full-title h2 { font-size: 2.6rem; margin-bottom: 8px; }
+
+  /* ── Bullet lists ── */
+  ul { list-style: none; padding: 0; }
+  ul li {
+    font-size: 1.02rem;
+    color: #222;
+    line-height: 1.55;
+    margin-bottom: 10px;
+    padding-left: 18px;
+    position: relative;
+  }
+  ul li::before {
+    content: '•';
+    color: #e85c0d;
+    font-weight: 700;
+    position: absolute;
+    left: 0;
+  }
+  ul li strong { color: #111; }
+  ul li ul { margin-top: 6px; margin-left: 8px; }
+  ul li ul li { font-size: 0.95rem; margin-bottom: 5px; }
+  ul li ul li::before { color: #aaa; content: '○'; }
+
+  /* ── Code blocks ── */
+  pre {
+    background: #1e1e2e;
+    color: #cdd6f4;
+    border-radius: 8px;
+    padding: 20px 22px;
+    font-size: 0.78rem;
+    line-height: 1.55;
+    overflow: auto;
+    max-height: 72vh;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    white-space: pre;
+  }
+
+  /* syntax colours */
+  .kw  { color: #cba6f7; }  /* keyword / type */
+  .fn  { color: #89b4fa; }  /* function */
+  .str { color: #a6e3a1; }  /* string */
+  .cm  { color: #6c7086; font-style: italic; }  /* comment */
+  .num { color: #fab387; }  /* number */
+  .tp  { color: #f9e2af; }  /* type name */
+  .op  { color: #89dceb; }  /* operator / punctuation */
+  .var { color: #cdd6f4; }
+
+  /* ── Pipeline diagram ── */
+  .pipeline {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.92rem;
+  }
+  .pipe-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .pipe-box {
+    background: #f5f5f5;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    padding: 7px 18px;
+    font-weight: 600;
+    color: #222;
+    min-width: 200px;
+    text-align: center;
+  }
+  .pipe-box.highlight { border-color: #e85c0d; background: #fff3ed; }
+  .pipe-arrow { color: #e85c0d; font-size: 1.3rem; margin-left: 8px; }
+
+  /* ── Table ── */
+  table { border-collapse: collapse; width: 100%; font-size: 0.92rem; margin-top: 8px; }
+  th { background: #e85c0d; color: #fff; padding: 9px 14px; text-align: left; }
+  td { padding: 8px 14px; border-bottom: 1px solid #eee; color: #222; }
+  tr:nth-child(even) td { background: #f9f9f9; }
+
+  /* ── Slide counter ── */
+  .counter {
+    position: fixed;
+    bottom: 18px;
+    right: 28px;
+    font-size: 0.78rem;
+    color: #bbb;
+    z-index: 100;
+  }
+
+  /* ── Navigation hint ── */
+  .nav-hint {
+    position: fixed;
+    bottom: 18px;
+    left: 28px;
+    font-size: 0.72rem;
+    color: #ccc;
+    z-index: 100;
+  }
+
+  /* ── Challenges slide ── */
+  .vertical-accent {
+    width: 4px;
+    background: #e85c0d;
+    border-radius: 2px;
+    min-height: 180px;
+    margin-right: 36px;
+    flex-shrink: 0;
+  }
+  .challenge-text { font-size: 1.05rem; color: #222; line-height: 1.7; }
+  .challenge-text p { margin-bottom: 18px; }
+</style>
+</head>
+<body>
+
+<div class="slideshow">
+
+  <!-- ══════════════════════════════════════════════ SLIDE 1 — TITLE -->
+  <div class="slide slide-title active">
+    <h1>Compiler Register<br>Allocation Tool</h1>
+    <div class="authors">
+      Henrique Pinto &mdash; up202404812<br>
+      Pedro Vieira &mdash; up202407613<br>
+      Roksolana Artymovych &mdash; up202403845
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ SLIDE 2 — DIAGRAMA DE CLASSES -->
+  <div class="slide slide-body">
+    <div class="left-col">
+      <div class="section-tag">Estrutura</div>
+      <h2>Diagrama de Classes</h2>
+      <div class="underline"></div>
+      <ul>
+        <li><strong>LiveRange</strong> &mdash; <code>lines</code>, <code>starts</code>, <code>ends</code></li>
+        <li><strong>Web</strong> &mdash; <code>id</code>, <code>variableName</code>, <code>lines</code>, <code>starts</code>, <code>ends</code>;<br>
+          métodos <code>overlaps()</code>, <code>merge()</code>, <code>split()</code></li>
+        <li><strong>Parser</strong> &mdash; <code>parseWebs()</code>: lê ranges.txt e constrói webs por fusão</li>
+        <li><strong>GraphBuilder</strong> &mdash; <code>interferes()</code>, <code>buildInterferenceGraph()</code></li>
+        <li><strong>Graph&lt;T&gt;</strong> / <strong>Vertex&lt;T&gt;</strong> / <strong>Edge&lt;T&gt;</strong> &mdash; grafo genérico (estrutura base do TP)</li>
+        <li><strong>AllocSettings</strong> &mdash; <code>numRegisters</code>, <code>algorithm</code>, <code>algoParam</code></li>
+        <li><strong>RegisterAllocator</strong> &mdash; <code>allocateRegisters()</code></li>
+        <li><strong>OutputWriter</strong> &mdash; <code>writeAllocation()</code></li>
+      </ul>
+    </div>
+    <div class="right-col">
+      <pre><span class="kw">struct</span> <span class="tp">LiveRange</span> <span class="op">{</span>
+    std<span class="op">::</span>set<span class="op">&lt;</span><span class="kw">int</span><span class="op">&gt;</span> lines<span class="op">;</span>
+    std<span class="op">::</span>set<span class="op">&lt;</span><span class="kw">int</span><span class="op">&gt;</span> starts<span class="op">;</span>
+    std<span class="op">::</span>set<span class="op">&lt;</span><span class="kw">int</span><span class="op">&gt;</span> ends<span class="op">;</span>
+<span class="op">};</span>
+
+<span class="kw">struct</span> <span class="tp">Web</span> <span class="op">{</span>
+    std<span class="op">::</span>string id<span class="op">;</span>
+    std<span class="op">::</span>string variableName<span class="op">;</span>
+    std<span class="op">::</span>set<span class="op">&lt;</span><span class="kw">int</span><span class="op">&gt;</span> lines<span class="op">,</span> starts<span class="op">,</span> ends<span class="op">;</span>
+
+    <span class="kw">bool</span> <span class="fn">overlaps</span><span class="op">(</span><span class="kw">const</span> <span class="tp">LiveRange</span><span class="op">&amp;</span> other<span class="op">)</span> <span class="kw">const</span><span class="op">;</span>
+    <span class="kw">void</span> <span class="fn">merge</span><span class="op">(</span><span class="kw">const</span> <span class="tp">LiveRange</span><span class="op">&amp;</span> other<span class="op">);</span>
+    std<span class="op">::</span>pair<span class="op">&lt;</span><span class="tp">Web</span><span class="op">,</span><span class="tp">Web</span><span class="op">&gt;</span> <span class="fn">split</span><span class="op">()</span> <span class="kw">const</span><span class="op">;</span>
+<span class="op">};</span>
+
+<span class="kw">struct</span> <span class="tp">AllocSettings</span> <span class="op">{</span>
+    <span class="kw">int</span>         numRegisters <span class="op">=</span> <span class="num">-1</span><span class="op">;</span>
+    std<span class="op">::</span>string  algorithm<span class="op">;</span>    <span class="cm">// basic | spilling | splitting | free</span>
+    <span class="kw">int</span>         algoParam    <span class="op">=</span> <span class="num">-1</span><span class="op">;</span>
+<span class="op">};</span></pre>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ SLIDE 3 — PIPELINE -->
+  <div class="slide slide-body">
+    <div class="left-col">
+      <div class="section-tag">Arquitetura</div>
+      <h2>Pipeline</h2>
+      <div class="underline"></div>
+      <div class="pipeline">
+        <div class="pipe-step"><div class="pipe-box highlight">ranges.txt + registers.txt</div></div>
+        <div style="margin-left:16px;color:#e85c0d;font-size:1.3rem;">↓</div>
+        <div class="pipe-step"><div class="pipe-box highlight">Parser::parseWebs()</div></div>
+        <div style="margin-left:16px;color:#e85c0d;font-size:1.3rem;">↓</div>
+        <div class="pipe-step"><div class="pipe-box highlight">GraphBuilder::buildInterferenceGraph()</div></div>
+        <div style="margin-left:16px;color:#e85c0d;font-size:1.3rem;">↓</div>
+        <div class="pipe-step"><div class="pipe-box highlight">RegisterAllocator::allocateRegisters()</div></div>
+        <div style="margin-left:16px;color:#e85c0d;font-size:1.3rem;">↓  <span style="color:#888;font-size:0.85rem;font-style:italic">  __RESTART__ se splitting</span></div>
+        <div class="pipe-step"><div class="pipe-box highlight">OutputWriter::writeAllocation()</div></div>
+        <div style="margin-left:16px;color:#e85c0d;font-size:1.3rem;">↓</div>
+        <div class="pipe-step"><div class="pipe-box">allocation.txt</div></div>
+      </div>
+    </div>
+    <div class="right-col">
+      <pre><span class="cm">// main.cpp — runPipeline()</span>
+std<span class="op">::</span>vector<span class="op">&lt;</span><span class="tp">Web</span><span class="op">&gt;</span> webs <span class="op">=</span>
+    <span class="tp">Parser</span><span class="op">::</span><span class="fn">parseWebs</span><span class="op">(</span>rangesFile<span class="op">);</span>
+
+<span class="kw">int</span> currentSplits <span class="op">=</span> <span class="num">0</span><span class="op">;</span>
+
+<span class="kw">while</span> <span class="op">(</span><span class="kw">true</span><span class="op">) {</span>
+    <span class="tp">Graph</span><span class="op">&lt;</span>std<span class="op">::</span>string<span class="op">&gt;</span> interferenceGraph <span class="op">=</span>
+        <span class="tp">GraphBuilder</span><span class="op">::</span><span class="fn">buildInterferenceGraph</span><span class="op">(</span>webs<span class="op">);</span>
+
+    allocation <span class="op">=</span> <span class="tp">RegisterAllocator</span><span class="op">::</span><span class="fn">allocateRegisters</span><span class="op">(</span>
+        interferenceGraph<span class="op">,</span> settings<span class="op">,</span> webs<span class="op">,</span> currentSplits<span class="op">);</span>
+
+    <span class="kw">if</span> <span class="op">(</span>allocation<span class="op">.</span><span class="fn">count</span><span class="op">(</span><span class="str">"__RESTART__"</span><span class="op">))</span>
+        <span class="kw">continue</span><span class="op">;</span>  <span class="cm">// web was split → rebuild</span>
+
+    <span class="kw">break</span><span class="op">;</span>
+<span class="op">}</span>
+
+<span class="tp">OutputWriter</span><span class="op">::</span><span class="fn">writeAllocation</span><span class="op">(</span>outputFile<span class="op">,</span> webs<span class="op">,</span> allocation<span class="op">);</span></pre>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ SLIDE 4 — PARSER -->
+  <div class="slide slide-body">
+    <div class="left-col">
+      <div class="section-tag">T1.2 — Leitura de Dados</div>
+      <h2>Parser</h2>
+      <div class="underline"></div>
+      <ul>
+        <li>Formato: <code>variavel: linha+, linha, linha-</code><br>
+          <ul>
+            <li><code>+</code> → definição (write)</li>
+            <li><code>-</code> → último uso (read)</li>
+          </ul>
+        </li>
+        <li>Cada linha cria uma <strong>LiveRange</strong></li>
+        <li>Fusão de webs por sobreposição:
+          <ul>
+            <li>Sem sobreposição → novo web</li>
+            <li>Uma sobreposição → funde nesse web</li>
+            <li>Várias sobreposições → <em>bridging</em>: absorve todos num só</li>
+          </ul>
+        </li>
+        <li><strong>Complexidade:</strong> O(N × |W| × |L|)</li>
+      </ul>
+    </div>
+    <div class="right-col">
+      <pre><span class="cm">// parser.cpp — lógica de fusão</span>
+std<span class="op">::</span>vector<span class="op">&lt;</span><span class="kw">int</span><span class="op">&gt;</span> overlappingIndices<span class="op">;</span>
+
+<span class="kw">for</span> <span class="op">(</span>size_t i <span class="op">=</span> <span class="num">0</span><span class="op">;</span> i <span class="op">&lt;</span> allWebs<span class="op">.</span><span class="fn">size</span><span class="op">();</span> <span class="op">++</span>i<span class="op">)</span>
+    <span class="kw">if</span> <span class="op">(</span>allWebs<span class="op">[</span>i<span class="op">].</span>variableName <span class="op">==</span> currentVariable
+        <span class="op">&amp;&amp;</span> allWebs<span class="op">[</span>i<span class="op">].</span><span class="fn">overlaps</span><span class="op">(</span>currentRange<span class="op">))</span>
+        overlappingIndices<span class="op">.</span><span class="fn">push_back</span><span class="op">(</span>i<span class="op">);</span>
+
+<span class="kw">if</span> <span class="op">(</span>overlappingIndices<span class="op">.</span><span class="fn">empty</span><span class="op">()) {</span>
+    <span class="cm">// Novo web</span>
+    <span class="tp">Web</span> newWeb<span class="op">;</span>
+    newWeb<span class="op">.</span>id <span class="op">=</span> <span class="str">"web"</span> <span class="op">+</span> std<span class="op">::</span><span class="fn">to_string</span><span class="op">(</span>webCounter<span class="op">++);</span>
+    newWeb<span class="op">.</span>variableName <span class="op">=</span> currentVariable<span class="op">;</span>
+    newWeb<span class="op">.</span><span class="fn">merge</span><span class="op">(</span>currentRange<span class="op">);</span>
+    allWebs<span class="op">.</span><span class="fn">push_back</span><span class="op">(</span>newWeb<span class="op">);</span>
+<span class="op">}</span> <span class="kw">else</span> <span class="op">{</span>
+    <span class="cm">// Funde na primeira sobreposição</span>
+    allWebs<span class="op">[</span>overlappingIndices<span class="op">[</span><span class="num">0</span><span class="op">]].</span><span class="fn">merge</span><span class="op">(</span>currentRange<span class="op">);</span>
+    <span class="cm">// Absorve restantes (bridging)</span>
+    <span class="kw">for</span> <span class="op">(</span><span class="kw">int</span> i <span class="op">=</span> overlappingIndices<span class="op">.</span><span class="fn">size</span><span class="op">()-</span><span class="num">1</span><span class="op">;</span> i <span class="op">&gt;=</span> <span class="num">1</span><span class="op">;</span> <span class="op">--</span>i<span class="op">)</span>
+        allWebs<span class="op">.</span><span class="fn">erase</span><span class="op">(</span>allWebs<span class="op">.</span><span class="fn">begin</span><span class="op">() +</span> overlappingIndices<span class="op">[</span>i<span class="op">]);</span>
+<span class="op">}</span></pre>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ SLIDE 5 — GRAPH CLASS -->
+  <div class="slide slide-body">
+    <div class="left-col">
+      <div class="section-tag">T1.2 — Grafo</div>
+      <h2>Graph&lt;T&gt;</h2>
+      <div class="underline"></div>
+      <ul>
+        <li>Estrutura base do TP reutilizada <strong>sem alterações</strong></li>
+        <li>Usada como <code>Graph&lt;string&gt;</code> — cada vértice é o <code>id</code> de um web</li>
+        <li>Grafo <strong>não-dirigido</strong>: cada interferência adiciona aresta nos dois sentidos</li>
+        <li>As extensões de coloração (<code>color</code>, <code>active</code>) são geridas externamente pelo <strong>RegisterAllocator</strong> com <code>map&lt;string,int&gt;</code> e <code>map&lt;string,bool&gt;</code></li>
+        <li>Justificação: sem modificar a estrutura base, os auxiliares permitem simplificação <em>não-destrutiva</em></li>
+      </ul>
+    </div>
+    <div class="right-col">
+      <pre><span class="kw">template</span> <span class="op">&lt;</span><span class="kw">class</span> T<span class="op">&gt;</span>
+<span class="kw">class</span> <span class="tp">Graph</span> <span class="op">{</span>
+    std<span class="op">::</span>vector<span class="op">&lt;</span><span class="tp">Vertex</span><span class="op">&lt;</span>T<span class="op">&gt;*&gt;</span> vertexSet<span class="op">;</span>
+<span class="kw">public</span><span class="op">:</span>
+    <span class="kw">int</span>  <span class="fn">getNumVertex</span><span class="op">()</span> <span class="kw">const</span><span class="op">;</span>
+    std<span class="op">::</span>vector<span class="op">&lt;</span><span class="tp">Vertex</span><span class="op">&lt;</span>T<span class="op">&gt;*&gt;</span> <span class="fn">getVertexSet</span><span class="op">()</span> <span class="kw">const</span><span class="op">;</span>
+    <span class="tp">Vertex</span><span class="op">&lt;</span>T<span class="op">&gt;*</span> <span class="fn">findVertex</span><span class="op">(</span><span class="kw">const</span> T<span class="op">&amp;</span> in<span class="op">)</span> <span class="kw">const</span><span class="op">;</span>
+    <span class="kw">bool</span> <span class="fn">addVertex</span><span class="op">(</span><span class="kw">const</span> T<span class="op">&amp;</span> in<span class="op">);</span>
+    <span class="kw">bool</span> <span class="fn">addEdge</span><span class="op">(</span><span class="kw">const</span> T<span class="op">&amp;</span> src<span class="op">,</span> <span class="kw">const</span> T<span class="op">&amp;</span> dst<span class="op">,</span> <span class="kw">double</span> w<span class="op">);</span>
+<span class="op">};</span>
+
+<span class="cm">// RegisterAllocator — estruturas auxiliares externas</span>
+std<span class="op">::</span>map<span class="op">&lt;</span>std<span class="op">::</span>string<span class="op">,</span> <span class="kw">int</span><span class="op">&gt;</span>  degrees<span class="op">;</span>
+std<span class="op">::</span>map<span class="op">&lt;</span>std<span class="op">::</span>string<span class="op">,</span> <span class="kw">bool</span><span class="op">&gt;</span> active<span class="op">;</span>
+std<span class="op">::</span>map<span class="op">&lt;</span>std<span class="op">::</span>string<span class="op">,</span> <span class="kw">int</span><span class="op">&gt;</span>  colors<span class="op">;</span>
+<span class="cm">// → nenhuma alteração ao Graph&lt;T&gt; necessária</span></pre>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ SLIDE 6 — INTERFERENCE GRAPH -->
+  <div class="slide slide-body">
+    <div class="left-col">
+      <div class="section-tag">Grafo de Interferência</div>
+      <h2>GraphBuilder</h2>
+      <div class="underline"></div>
+      <ul>
+        <li>Dois webs <strong>interferem</strong> se partilham pelo menos um program point ativo em simultâneo</li>
+        <li><strong>Caso limite</strong> — <em>clean handoff</em>: web A termina com <code>-</code> na linha L e web B começa com <code>+</code> na mesma linha L → <strong>não interferem</strong>
+          <ul><li>Permite reutilizar o mesmo registo em <code>i = i + 1</code></li></ul>
+        </li>
+        <li>Se <em>todas</em> as linhas comuns são handoffs → sem interferência</li>
+        <li><strong>Complexidade:</strong> O(|W|² × |L|)</li>
+      </ul>
+    </div>
+    <div class="right-col">
+      <pre><span class="kw">static bool</span> <span class="fn">interferes</span><span class="op">(</span><span class="kw">const</span> <span class="tp">Web</span><span class="op">&amp;</span> a<span class="op">,</span> <span class="kw">const</span> <span class="tp">Web</span><span class="op">&amp;</span> b<span class="op">) {</span>
+    std<span class="op">::</span>vector<span class="op">&lt;</span><span class="kw">int</span><span class="op">&gt;</span> commonLines<span class="op">;</span>
+    std<span class="op">::</span><span class="fn">set_intersection</span><span class="op">(</span>
+        a<span class="op">.</span>lines<span class="op">.</span><span class="fn">begin</span><span class="op">(),</span> a<span class="op">.</span>lines<span class="op">.</span><span class="fn">end</span><span class="op">(),</span>
+        b<span class="op">.</span>lines<span class="op">.</span><span class="fn">begin</span><span class="op">(),</span> b<span class="op">.</span>lines<span class="op">.</span><span class="fn">end</span><span class="op">(),</span>
+        std<span class="op">::</span><span class="fn">back_inserter</span><span class="op">(</span>commonLines<span class="op">));</span>
+
+    <span class="kw">if</span> <span class="op">(</span>commonLines<span class="op">.</span><span class="fn">empty</span><span class="op">())</span> <span class="kw">return false</span><span class="op">;</span>
+
+    <span class="kw">for</span> <span class="op">(</span><span class="kw">int</span> line <span class="op">:</span> commonLines<span class="op">) {</span>
+        <span class="kw">bool</span> a_ends   <span class="op">= (</span>a<span class="op">.</span>ends<span class="op">.</span><span class="fn">count</span><span class="op">(</span>line<span class="op">) !=</span> <span class="num">0</span><span class="op">);</span>
+        <span class="kw">bool</span> b_starts <span class="op">= (</span>b<span class="op">.</span>starts<span class="op">.</span><span class="fn">count</span><span class="op">(</span>line<span class="op">) !=</span> <span class="num">0</span><span class="op">);</span>
+        <span class="kw">bool</span> b_ends   <span class="op">= (</span>b<span class="op">.</span>ends<span class="op">.</span><span class="fn">count</span><span class="op">(</span>line<span class="op">) !=</span> <span class="num">0</span><span class="op">);</span>
+        <span class="kw">bool</span> a_starts <span class="op">= (</span>a<span class="op">.</span>starts<span class="op">.</span><span class="fn">count</span><span class="op">(</span>line<span class="op">) !=</span> <span class="num">0</span><span class="op">);</span>
+
+        <span class="kw">bool</span> is_clean_handoff <span class="op">=</span>
+            <span class="op">(</span>a_ends <span class="op">&amp;&amp;</span> b_starts<span class="op">) || (</span>b_ends <span class="op">&amp;&amp;</span> a_starts<span class="op">);</span>
+
+        <span class="kw">if</span> <span class="op">(!</span>is_clean_handoff<span class="op">)</span> <span class="kw">return true</span><span class="op">;</span>
+    <span class="op">}</span>
+    <span class="kw">return false</span><span class="op">;</span>
+<span class="op">}</span></pre>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ SLIDE 7 — BASIC ALGORITHM -->
+  <div class="slide slide-body">
+    <div class="left-col">
+      <div class="section-tag">T2.1 — Algoritmo Básico</div>
+      <h2>Greedy Graph Colouring</h2>
+      <div class="underline"></div>
+      <ul>
+        <li><strong>Fase 1 — Simplificação:</strong> remover repetidamente vértices com grau &lt; K para uma stack
+          <ul>
+            <li>Se todos os restantes têm grau ≥ K e não há intervenção → falha total</li>
+          </ul>
+        </li>
+        <li><strong>Fase 2 — Coloração:</strong> desempilhar e atribuir a menor cor &lt; K não usada pelos vizinhos</li>
+        <li>Se falha → todos os webs vão para memória (registers: 0)</li>
+        <li><strong>Complexidade:</strong> O(|V|² + |E|)</li>
+      </ul>
+    </div>
+    <div class="right-col">
+      <pre><span class="cm">// Fase 1 — Simplificação</span>
+<span class="kw">while</span> <span class="op">(</span>activeCount <span class="op">&gt;</span> <span class="num">0</span><span class="op">) {</span>
+    <span class="kw">bool</span> removedAny <span class="op">=</span> <span class="kw">false</span><span class="op">;</span>
+    <span class="kw">for</span> <span class="op">(</span><span class="kw">auto</span> v <span class="op">:</span> graph<span class="op">.</span><span class="fn">getVertexSet</span><span class="op">()) {</span>
+        <span class="kw">if</span> <span class="op">(</span>active<span class="op">[</span>id<span class="op">] &amp;&amp;</span> degrees<span class="op">[</span>id<span class="op">] &lt;</span> settings<span class="op">.</span>numRegisters<span class="op">) {</span>
+            active<span class="op">[</span>id<span class="op">] =</span> <span class="kw">false</span><span class="op">;</span>
+            stack<span class="op">.</span><span class="fn">push_back</span><span class="op">(</span>id<span class="op">);</span>
+            activeCount<span class="op">--;</span>
+            removedAny <span class="op">=</span> <span class="kw">true</span><span class="op">;</span>
+            <span class="cm">// actualizar graus dos vizinhos</span>
+        <span class="op">}</span>
+    <span class="op">}</span>
+    <span class="kw">if</span> <span class="op">(!</span>removedAny<span class="op">) {</span> failed <span class="op">=</span> <span class="kw">true</span><span class="op">;</span> <span class="kw">break</span><span class="op">; }</span>
+<span class="op">}</span>
+
+<span class="cm">// Fase 2 — Coloração</span>
+<span class="kw">while</span> <span class="op">(!</span>stack<span class="op">.</span><span class="fn">empty</span><span class="op">()) {</span>
+    std<span class="op">::</span>string id <span class="op">=</span> stack<span class="op">.</span><span class="fn">back</span><span class="op">();</span> stack<span class="op">.</span><span class="fn">pop_back</span><span class="op">();</span>
+    std<span class="op">::</span>set<span class="op">&lt;</span><span class="kw">int</span><span class="op">&gt;</span> usedColours<span class="op">;</span>
+    <span class="kw">for</span> <span class="op">(</span><span class="kw">auto</span> edge <span class="op">:</span> v<span class="op">-&gt;</span><span class="fn">getAdj</span><span class="op">())</span>
+        <span class="kw">if</span> <span class="op">(</span>colors<span class="op">[</span>neighbour<span class="op">] !=</span> <span class="num">-1</span><span class="op">)</span>
+            usedColours<span class="op">.</span><span class="fn">insert</span><span class="op">(</span>colors<span class="op">[</span>neighbour<span class="op">]);</span>
+    <span class="kw">for</span> <span class="op">(</span><span class="kw">int</span> c <span class="op">=</span> <span class="num">0</span><span class="op">;</span> c <span class="op">&lt;</span> K<span class="op">;</span> <span class="op">++</span>c<span class="op">)</span>
+        <span class="kw">if</span> <span class="op">(!</span>usedColours<span class="op">.</span><span class="fn">count</span><span class="op">(</span>c<span class="op">)) {</span> colors<span class="op">[</span>id<span class="op">] =</span> c<span class="op">;</span> <span class="kw">break</span><span class="op">; }</span>
+<span class="op">}</span></pre>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ SLIDE 8 — SPILLING -->
+  <div class="slide slide-body">
+    <div class="left-col">
+      <div class="section-tag">T2.2 — Web Spilling</div>
+      <h2>Spilling</h2>
+      <div class="underline"></div>
+      <ul>
+        <li>Quando a simplificação fica bloqueada, <strong>retira o web de maior grau</strong> (atribui à memória) e continua</li>
+        <li><strong>Heurística:</strong> maior grau = mais interferências = maior obstáculo para colorir</li>
+        <li>Permitido até <code>algoParam</code> spills; se exceder → falha</li>
+        <li>Actualiza graus dos vizinhos após cada spill</li>
+        <li><strong>Complexidade:</strong> O(K × (|V|² + |E|))</li>
+      </ul>
+    </div>
+    <div class="right-col">
+      <pre><span class="kw">else if</span> <span class="op">(</span>settings<span class="op">.</span>algorithm <span class="op">==</span> <span class="str">"spilling"</span>
+         <span class="op">&amp;&amp;</span> currentSpills <span class="op">&lt;</span> settings<span class="op">.</span>algoParam<span class="op">) {</span>
+
+    <span class="cm">// Selecção heurística — maior grau</span>
+    <span class="kw">for</span> <span class="op">(</span><span class="kw">auto</span> v <span class="op">:</span> graph<span class="op">.</span><span class="fn">getVertexSet</span><span class="op">()) {</span>
+        <span class="kw">if</span> <span class="op">(</span>active<span class="op">[</span>id<span class="op">] &amp;&amp;</span> degrees<span class="op">[</span>id<span class="op">] &gt;</span> maxMetric<span class="op">) {</span>
+            maxMetric <span class="op">=</span> degrees<span class="op">[</span>id<span class="op">];</span>
+            problematicNode <span class="op">=</span> id<span class="op">;</span>
+        <span class="op">}</span>
+    <span class="op">}</span>
+
+    <span class="cm">// Desactivar — atribuído à memória (color = -1)</span>
+    active<span class="op">[</span>problematicNode<span class="op">] =</span> <span class="kw">false</span><span class="op">;</span>
+    activeCount<span class="op">--;</span>
+    currentSpills<span class="op">++;</span>
+
+    <span class="cm">// Actualizar vizinhos</span>
+    <span class="kw">for</span> <span class="op">(</span><span class="kw">auto</span> edge <span class="op">:</span> spillVertex<span class="op">-&gt;</span><span class="fn">getAdj</span><span class="op">())</span>
+        <span class="kw">if</span> <span class="op">(</span>active<span class="op">[</span>neighbour<span class="op">])</span>
+            degrees<span class="op">[</span>neighbour<span class="op">]--;</span>
+<span class="op">}</span></pre>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ SLIDE 9 — SPLITTING -->
+  <div class="slide slide-body">
+    <div class="left-col">
+      <div class="section-tag">T2.3 — Web Splitting</div>
+      <h2>Splitting</h2>
+      <div class="underline"></div>
+      <ul>
+        <li>Em vez de descartar, <strong>divide o web de maior grau</strong> em dois sub-webs pela metade cronológica</li>
+        <li>Sub-webs menores têm menos vizinhos → grafo mais fácil de colorir</li>
+        <li>Devolve sinal <code>"__RESTART__"</code> → pipeline reconstrói o grafo de interferência e recomeça</li>
+        <li>Permitido até <code>algoParam</code> divisões</li>
+        <li><strong>Complexidade:</strong> O(K × (|W|²·|L| + |V|² + |E|))</li>
+      </ul>
+    </div>
+    <div class="right-col">
+      <pre><span class="kw">if</span> <span class="op">(</span>settings<span class="op">.</span>algorithm <span class="op">==</span> <span class="str">"splitting"</span>
+    <span class="op">&amp;&amp;</span> currentSplits <span class="op">&lt;</span> settings<span class="op">.</span>algoParam<span class="op">) {</span>
+
+    std<span class="op">::</span>vector<span class="op">&lt;</span><span class="tp">Web</span><span class="op">&gt;</span> newWebs<span class="op">;</span>
+    <span class="kw">for</span> <span class="op">(</span><span class="kw">const</span> <span class="tp">Web</span><span class="op">&amp;</span> w <span class="op">:</span> webs<span class="op">) {</span>
+        <span class="kw">if</span> <span class="op">(</span>w<span class="op">.</span>id <span class="op">==</span> problematicNode<span class="op">) {</span>
+            <span class="kw">auto</span> <span class="op">[</span>w1<span class="op">,</span> w2<span class="op">] =</span> w<span class="op">.</span><span class="fn">split</span><span class="op">();</span>
+            newWebs<span class="op">.</span><span class="fn">push_back</span><span class="op">(</span>w1<span class="op">);</span>
+            newWebs<span class="op">.</span><span class="fn">push_back</span><span class="op">(</span>w2<span class="op">);</span>
+        <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span>
+            newWebs<span class="op">.</span><span class="fn">push_back</span><span class="op">(</span>w<span class="op">);</span>
+        <span class="op">}</span>
+    <span class="op">}</span>
+    webs <span class="op">=</span> newWebs<span class="op">;</span>
+    currentSplits<span class="op">++;</span>
+    <span class="kw">return</span> <span class="op">{{</span><span class="str">"__RESTART__"</span><span class="op">,</span> <span class="num">1</span><span class="op">}};</span> <span class="cm">// sinaliza rebuild</span>
+<span class="op">}</span></pre>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ SLIDE 10 — FREE MODE -->
+  <div class="slide slide-body">
+    <div class="left-col">
+      <div class="section-tag">T2.4 — Algoritmo Livre</div>
+      <h2>Free Mode</h2>
+      <div class="underline"></div>
+      <ul>
+        <li>Spilling <strong>sem limite</strong> de webs derramados</li>
+        <li><strong>Heurística diferente:</strong> seleciona o web com <strong>mais linhas</strong> (maior footprint), em vez do maior grau
+          <ul>
+            <li>Razão: web com muitas linhas interfere com mais vizinhos ao longo do tempo → mais valioso libertar</li>
+          </ul>
+        </li>
+        <li>Garante sempre uma alocação válida (no pior caso, todos vão para memória)</li>
+        <li><strong>Complexidade:</strong> O(|V|² + |E|)</li>
+      </ul>
+    </div>
+    <div class="right-col">
+      <pre><span class="kw">if</span> <span class="op">(</span>settings<span class="op">.</span>algorithm <span class="op">==</span> <span class="str">"free"</span><span class="op">) {</span>
+    <span class="cm">// Heurística: maior número de linhas</span>
+    <span class="kw">for</span> <span class="op">(</span><span class="kw">auto</span> v <span class="op">:</span> graph<span class="op">.</span><span class="fn">getVertexSet</span><span class="op">()) {</span>
+        <span class="kw">if</span> <span class="op">(!</span>active<span class="op">[</span>id<span class="op">])</span> <span class="kw">continue</span><span class="op">;</span>
+        <span class="kw">int</span> lineCount <span class="op">=</span> <span class="num">0</span><span class="op">;</span>
+        <span class="kw">for</span> <span class="op">(</span><span class="kw">const</span> <span class="tp">Web</span><span class="op">&amp;</span> w <span class="op">:</span> webs<span class="op">)</span>
+            <span class="kw">if</span> <span class="op">(</span>w<span class="op">.</span>id <span class="op">==</span> id<span class="op">)</span>
+                lineCount <span class="op">=</span> w<span class="op">.</span>lines<span class="op">.</span><span class="fn">size</span><span class="op">();</span>
+        <span class="kw">if</span> <span class="op">(</span>lineCount <span class="op">&gt;</span> maxMetric<span class="op">) {</span>
+            maxMetric <span class="op">=</span> lineCount<span class="op">;</span>
+            problematicNode <span class="op">=</span> id<span class="op">;</span>
+        <span class="op">}</span>
+    <span class="op">}</span>
+<span class="op">}</span>
+<span class="cm">// Spill sem verificar limite (modo livre)</span>
+active<span class="op">[</span>problematicNode<span class="op">] =</span> <span class="kw">false</span><span class="op">;</span>
+activeCount<span class="op">--; </span>currentSpills<span class="op">++;</span></pre>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ SLIDE 11 — INTERFACE -->
+  <div class="slide slide-body">
+    <div class="left-col">
+      <div class="section-tag">T1.1 — Interface</div>
+      <h2>Interface</h2>
+      <div class="underline"></div>
+      <ul>
+        <li><strong>Modo interativo:</strong>
+          <ul>
+            <li>1. Carregar ficheiros (ranges + registers)</li>
+            <li>2. Correr alocação → escolher ficheiro de saída</li>
+            <li>0. Sair</li>
+          </ul>
+        </li>
+        <li><strong>Modo batch:</strong><br>
+          <code>myProg -b ranges.txt registers.txt output.txt</code>
+        </li>
+        <li>Erros enviados para <code>stderr</code></li>
+        <li>Resultado escrito no ficheiro de saída com formato normalizado</li>
+      </ul>
+    </div>
+    <div class="right-col">
+      <pre><span class="cm">// Batch mode</span>
+<span class="kw">if</span> <span class="op">(</span>argc <span class="op">==</span> <span class="num">5</span> <span class="op">&amp;&amp;</span> std<span class="op">::</span><span class="fn">strcmp</span><span class="op">(</span>argv<span class="op">[</span><span class="num">1</span><span class="op">],</span> <span class="str">"-b"</span><span class="op">) ==</span> <span class="num">0</span><span class="op">) {</span>
+    <span class="fn">runBatchMode</span><span class="op">(</span>argv<span class="op">[</span><span class="num">2</span><span class="op">],</span> argv<span class="op">[</span><span class="num">3</span><span class="op">],</span> argv<span class="op">[</span><span class="num">4</span><span class="op">]);</span>
+<span class="op">}</span>
+
+<span class="cm">// Menu interativo</span>
+<span class="op">===</span> Compiler Register Allocation Tool <span class="op">===</span>
+<span class="num">1</span><span class="op">.</span> Load datasets <span class="op">(</span>Ranges <span class="op">&amp;</span> Registers<span class="op">)</span>
+<span class="num">2</span><span class="op">.</span> Run Allocation
+<span class="num">0</span><span class="op">.</span> Exit
+Choice<span class="op">:</span> _
+
+<span class="cm">// Exemplo de output</span>
+webs<span class="op">:</span> <span class="num">3</span>
+web0<span class="op">:</span> <span class="num">7</span><span class="op">+,</span><span class="num">8</span><span class="op">,</span><span class="num">9</span><span class="op">,</span><span class="num">10</span><span class="op">-</span>
+web1<span class="op">:</span> <span class="num">1</span><span class="op">+,</span><span class="num">2</span><span class="op">,</span><span class="num">3</span><span class="op">,</span><span class="num">4</span><span class="op">,</span><span class="num">5</span><span class="op">,</span><span class="num">6</span><span class="op">-</span>
+web2<span class="op">:</span> <span class="num">9</span><span class="op">+,</span><span class="num">10</span><span class="op">,</span><span class="num">11</span><span class="op">,</span><span class="num">12</span><span class="op">,</span><span class="num">13</span><span class="op">,</span><span class="num">14</span><span class="op">-,</span><span class="num">20</span><span class="op">+</span>
+registers<span class="op">:</span> <span class="num">2</span>
+r0<span class="op">:</span> web0
+r0<span class="op">:</span> web2
+r1<span class="op">:</span> web1</pre>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ SLIDE 12 — COMPLEXIDADES -->
+  <div class="slide">
+    <div class="full-title" style="margin-bottom:8px;">
+      <div class="section-tag">Análise</div>
+      <h2>Complexidade Temporal</h2>
+      <div class="underline"></div>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Componente</th><th>Complexidade</th><th>Razão</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Parser</strong> — parseWebs()</td><td>O(N × |W| × |L|)</td><td>N linhas, cada uma comparada com todos os webs</td></tr>
+        <tr><td><strong>GraphBuilder</strong> — buildInterferenceGraph()</td><td>O(|W|² × |L|)</td><td>Todos os pares de webs; interseção de sets</td></tr>
+        <tr><td><strong>basic</strong> — Greedy Coloring</td><td>O(|V|² + |E|)</td><td>Simplificação + coloração sobre o grafo</td></tr>
+        <tr><td><strong>spilling</strong></td><td>O(K × (|V|² + |E|))</td><td>K iterações de spill + recoloração</td></tr>
+        <tr><td><strong>splitting</strong></td><td>O(K × (|W|²·|L| + |V|² + |E|))</td><td>K rebuilds do grafo após cada split</td></tr>
+        <tr><td><strong>free</strong></td><td>O(|V|² + |E|)</td><td>Spilling ilimitado mas numa só passagem</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ SLIDE 13 — DIFICULDADES -->
+  <div class="slide active" style="display:none;">
+    <div style="display:flex;align-items:flex-start;height:100%;">
+      <div style="display:flex;flex-direction:column;justify-content:center;margin-right:60px;">
+        <div class="section-tag">Reflexão</div>
+        <h2>Dificuldades</h2>
+        <div class="underline"></div>
+      </div>
+      <div class="vertical-accent"></div>
+      <div class="challenge-text" style="display:flex;flex-direction:column;justify-content:center;">
+        <p>A deteção correta de interferência nos limites dos webs foi o aspeto mais subtil: dois webs que partilham uma linha apenas por <em>clean handoff</em> (um termina com <code>-</code> e outro começa com <code>+</code> na mesma linha) não interferem — implementar esta regra exigiu cuidado especial em <code>GraphBuilder::interferes()</code>.</p>
+        <p>A fusão transitiva de webs no parser (<em>bridging</em>): uma nova live range pode ligar dois webs previamente separados da mesma variável, obrigando a absorver múltiplos webs de uma vez e a iterar os índices de trás para a frente para não corromper o vector.</p>
+        <p>A integração do mecanismo de restart para splitting (<code>"__RESTART__"</code>) entre <code>RegisterAllocator</code> e <code>main.cpp</code> foi o aspeto mais desafiante da arquitectura — o alocador modifica o vector de webs por referência e sinaliza ao pipeline para reconstruir o grafo.</p>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end slideshow -->
+
+<div class="counter" id="counter">1 / 13</div>
+<div class="nav-hint">← → para navegar &nbsp;|&nbsp; F para fullscreen</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+
+  function show(n) {
+    slides[current].classList.remove('active');
+    slides[current].style.display = 'none';
+    current = (n + slides.length) % slides.length;
+    slides[current].style.display = 'flex';
+    slides[current].classList.add('active');
+    document.getElementById('counter').textContent = (current + 1) + ' / ' + slides.length;
+  }
+
+  // init
+  slides.forEach((s, i) => { s.style.display = 'none'; });
+  slides[0].style.display = 'flex';
+  slides[0].classList.add('active');
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') show(current + 1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                     show(current - 1);
+    if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    }
+  });
+
+  document.querySelector('.slideshow').addEventListener('click', e => {
+    const x = e.clientX / window.innerWidth;
+    show(x > 0.5 ? current + 1 : current - 1);
+  });
+</script>
+</body>
+</html>
