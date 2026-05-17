@@ -11,7 +11,6 @@
 #include "outputWriter.h"
 #include "graph.h"
 
-// Prototypes
 void runInteractiveMenu();
 void runBatchMode(const std::string& rangesFile, const std::string& registersFile, const std::string& outputFile);
 AllocSettings parseRegistersFile(const std::string& filename);
@@ -72,14 +71,12 @@ static void runPipeline(
 {
     AllocSettings settings = parseRegistersFile("../data/registers/" + registersFile);
     
-    // Explicitly reject 0 or missing registers
     if (settings.numRegisters <= 0) {
         std::cerr << "Error: Invalid or missing register count (" 
                   << settings.numRegisters << "). Must be greater than 0.\n";
         return;
     }
 
-    // Ensure the parameters were actually found if the mode requires them
     if ((settings.algorithm == "spilling" || settings.algorithm == "splitting") && settings.algoParam < 0) {
         std::cerr << "Error: Algorithm '" << settings.algorithm << "' requires a numeric positive parameter.\n";
         return;
@@ -199,11 +196,27 @@ void runInteractiveMenu() {
             for (auto v : graph.getVertexSet()) {
                 numEdges += v->getAdj().size();
             }
-            numEdges /= 2; // Dividimos por 2 porque o grafo adiciona arestas bidirecionais (A->B e B->A)
+            numEdges /= 2;
 
             std::cout << "\n--- Interference Graph ---\n";
             std::cout << "Nodes (Webs): " << graph.getNumVertex() << "\n";
             std::cout << "Edges (Interferences): " << numEdges << "\n";
+
+            std::cout << "\nDetailed Interferences:\n";
+            for (auto v : graph.getVertexSet()) {
+                std::cout << "  " << v->getInfo() << " collides with: [";
+                
+                auto adj = v->getAdj();
+                if (adj.empty()) {
+                    std::cout << "";
+                } else {
+                    for (size_t i = 0; i < adj.size(); ++i) {
+                        std::cout << adj[i]->getDest()->getInfo();
+                        if (i < adj.size() - 1) std::cout << ", ";
+                    }
+                }
+                std::cout << "]\n";
+            }
             break;
         }
 

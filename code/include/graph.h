@@ -36,7 +36,7 @@ public:
 template <class T>
 class Edge {
     Vertex<T>* dest;
-    double weight; // Kept purely for compatibility with standard graph signatures
+    double weight;
 public:
     Edge(Vertex<T>* d, double w = 0.0) : dest(d), weight(w) {}
     

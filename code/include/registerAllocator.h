@@ -48,9 +48,6 @@ public:
         int currentSpills = 0;
         bool failed = false;
 
-        // ==========================================
-        // PHASE 1: SIMPLIFY, SPILL & SPLIT
-        // ==========================================
         while (activeCount > 0) {
             bool removedAny = false;
             
@@ -75,7 +72,6 @@ public:
                 std::string problematicNode = "";
                 int maxMetric = -1; 
                 
-                // --- HEURISTIC SELECTION ---
                 if (settings.algorithm == "free") {
                     for (auto v : graph.getVertexSet()) {
                         std::string id = v->getInfo();
@@ -103,7 +99,6 @@ public:
                     }
                 }
 
-                // --- EXECUTE INTERVENTION ---
                 if (settings.algorithm == "splitting" && currentSplits < settings.algoParam) {
                     std::cout << "  -> Splitting " << problematicNode << " (Degree: " << maxMetric << ") to reduce interference.\n";
                     
@@ -158,9 +153,6 @@ public:
             return colors; 
         }
 
-        // ==========================================
-        // PHASE 2: COLOURING
-        // ==========================================
         while (!stack.empty()) {
             std::string id = stack.back();
             stack.pop_back();
