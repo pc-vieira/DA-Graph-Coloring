@@ -73,3 +73,13 @@ bash run-default.sh
 ```
 
 Without Git Bash or WSL, open `run-default.sh` and run the commands it contains manually in a terminal.
+
+---
+
+## Documentation
+
+Run the following command to generate the documentation files:
+
+```bash
+doxygen Doxyfile
+```
