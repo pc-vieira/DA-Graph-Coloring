@@ -52,6 +52,12 @@ AllocSettings parseRegistersFile(const std::string& filename) {
             }
         }
     }
+
+    if ((settings.algorithm == "spilling" || settings.algorithm == "splitting") && settings.algoParam == 0) {
+        settings.algorithm = "basic";
+        settings.algoParam = -1;
+    }
+
     return settings;
 }
 
@@ -66,8 +72,17 @@ static void runPipeline(
     bool verbose = true)
 {
     AllocSettings settings = parseRegistersFile(registersFile);
+    
+    // Explicitly reject 0 or missing registers
     if (settings.numRegisters <= 0) {
-        std::cerr << "Error: Could not parse a valid register count from " << registersFile << "\n";
+        std::cerr << "Error: Invalid or missing register count (" 
+                  << settings.numRegisters << "). Must be greater than 0.\n";
+        return;
+    }
+
+    // Ensure the parameters were actually found if the mode requires them
+    if ((settings.algorithm == "spilling" || settings.algorithm == "splitting") && settings.algoParam < 0) {
+        std::cerr << "Error: Algorithm '" << settings.algorithm << "' requires a numeric positive parameter.\n";
         return;
     }
 
@@ -99,28 +114,6 @@ static void runPipeline(
     }
 
     OutputWriter::writeAllocation(outputFile, webs, allocation);
-}
-
-/**
- * @brief Program entry point. Routes to interactive or batch mode.
- */
-int main(int argc, char* argv[]) {
-    if (argc >= 5 && std::strcmp(argv[1], "-b") == 0) {
-        std::string rangesFile    = argv[2];
-        std::string registersFile = argv[3];
-        std::string outputFile    = argv[4];
-        
-        runBatchMode(rangesFile, registersFile, outputFile);
-    } else if (argc == 1) {
-        std::cout << "Starting Interactive Mode...\n";
-        runInteractiveMenu();
-    } else {
-        std::cerr << "Usage:\n"
-                  << "  Interactive:  " << argv[0] << "\n"
-                  << "  Batch:        " << argv[0] << " -b <ranges.txt> <registers.txt> <output.txt>\n";
-        return 1;
-    }
-    return 0;
 }
 
 void runBatchMode(const std::string& rangesFile, const std::string& registersFile, const std::string& outputFile) {
@@ -190,4 +183,26 @@ void runInteractiveMenu() {
             std::cerr << "Invalid option.\n";
         }
     }
+}
+
+/**
+ * @brief Program entry point. Routes to interactive or batch mode.
+ */
+int main(int argc, char* argv[]) {
+    if (argc == 5 && std::strcmp(argv[1], "-b") == 0) {
+        std::string rangesFile    = argv[2];
+        std::string registersFile = argv[3];
+        std::string outputFile    = argv[4];
+        
+        runBatchMode(rangesFile, registersFile, outputFile);
+    } else if (argc == 1) {
+        std::cout << "Starting Interactive Mode...\n";
+        runInteractiveMenu();
+    } else {
+        std::cerr << "Usage:\n"
+                  << "  Interactive:  " << argv[0] << "\n"
+                  << "  Batch:        " << argv[0] << " -b <ranges.txt> <registers.txt> <output.txt>\n";
+        return 1;
+    }
+    return 0;
 }

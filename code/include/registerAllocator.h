@@ -12,9 +12,9 @@
  * @brief Configuration struct for register allocation mode.
  */
 struct AllocSettings {
-    int numRegisters = 0;
-    std::string algorithm = "basic";
-    int algoParam = 0;
+    int numRegisters = -1;
+    std::string algorithm;
+    int algoParam = -1;
 };
 
 /**
@@ -126,7 +126,6 @@ public:
                           settings.algorithm == "free") {
                     
                     active[problematicNode] = false; 
-                    colors[problematicNode] = -1; 
                     activeCount--;
                     currentSpills++;
                     
