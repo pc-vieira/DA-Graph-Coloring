@@ -68,8 +68,7 @@ AllocSettings parseRegistersFile(const std::string& filename) {
 static void runPipeline(
     const std::string& rangesFile,
     const std::string& registersFile,
-    const std::string& outputFile,
-    bool verbose = true)
+    const std::string& outputFile)
 {
     AllocSettings settings = parseRegistersFile("../data/registers/" + registersFile);
     
@@ -98,11 +97,9 @@ static void runPipeline(
     while (true) {
         Graph<std::string> interferenceGraph = GraphBuilder::buildInterferenceGraph(webs);
         
-        if (verbose) {
-            std::cout << "Built Interference Graph with " 
-                      << interferenceGraph.getNumVertex() << " webs fighting for " 
-                      << settings.numRegisters << " registers.\n";
-        }
+        std::cout << "Built Interference Graph with " 
+                    << interferenceGraph.getNumVertex() << " webs fighting for " 
+                    << settings.numRegisters << " registers.\n";
 
         allocation = RegisterAllocator::allocateRegisters(interferenceGraph, settings, webs, currentSplits);
 
@@ -117,7 +114,7 @@ static void runPipeline(
 }
 
 void runBatchMode(const std::string& rangesFile, const std::string& registersFile, const std::string& outputFile) {
-    runPipeline(rangesFile, registersFile, outputFile, false);
+    runPipeline(rangesFile, registersFile, outputFile);
 }
 
 void runInteractiveMenu() {
@@ -135,7 +132,7 @@ void runInteractiveMenu() {
         std::cin >> choice;
         if (std::cin.fail()) {
             std::cin.clear();
-            std::cin.ignore(10000, '\n');
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
             std::cerr << "Invalid input.\n";
             continue;
         }
@@ -145,7 +142,7 @@ void runInteractiveMenu() {
             std::cout << "Enter Ranges filename (e.g., ranges1.txt): ";
             std::cin >> rangesInput;
             
-            std::cout << "Enter Registers filename (e.g., registers2.txt): ";
+            std::cout << "Enter Registers filename (e.g., registers1.txt): ";
             std::cin >> registersInput;
             
             dataLoaded = true;
@@ -160,11 +157,11 @@ void runInteractiveMenu() {
             }
             
             std::string outputInput;
-            std::cout << "Enter Output filename (e.g., interactive_alloc.txt): ";
+            std::cout << "Enter Output filename (e.g., allocation1.txt): ";
             std::cin >> outputInput;
 
             std::cout << "\n--- Running Register Allocation ---\n";
-            runPipeline(rangesInput, registersInput, outputInput, true);
+            runPipeline(rangesInput, registersInput, outputInput);
             break;
         }
 
@@ -174,6 +171,7 @@ void runInteractiveMenu() {
 
         default:
             std::cerr << "Invalid option.\n";
+            break;
         }
     }
 }

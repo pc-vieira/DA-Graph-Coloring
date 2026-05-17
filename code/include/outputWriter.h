@@ -53,23 +53,22 @@ public:
         int spilledCount = 0;
         
         for (const auto& pair : allocation) {
-            if (pair.second > maxRegisterUsed) {
-                maxRegisterUsed = pair.second;
-            }
             if (pair.second == -1) {
                 spilledCount++;
+            } else if (pair.second > maxRegisterUsed) {
+                maxRegisterUsed = pair.second;
             }
         }
         
-        bool totalFailure = (spilledCount == allocation.size() && !allocation.empty());
-        int totalRegistersUsed = totalFailure ? 0 : (maxRegisterUsed + 1);
+        bool totalFailure = (spilledCount == allocation.size());
+        int totalRegistersUsed = maxRegisterUsed + 1;
 
         outFile << "# Total number of registers used, followed by assignment to webs\n";
         outFile << "registers: " << totalRegistersUsed << "\n";
 
         for (const Web& w : webs) {
             int reg = allocation.at(w.id);
-            if (totalFailure || reg == -1) {
+            if (reg == -1) {
                 outFile << "M: " << w.id << "\n";
             } else {
                 outFile << "r" << reg << ": " << w.id << "\n";
