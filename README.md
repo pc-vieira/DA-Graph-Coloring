@@ -1,5 +1,32 @@
 # Compiler Register Allocation Tool
 
+## Project Structure
+
+The final delivery is structured as follows:
+
+```text
+📦 DA2026_PRJ2_T<Class>_G<Group>
+ ┣ 📂 Documentation        # Doxygen documentation
+ ┃ ┣ 📂 html
+ ┃ ┗ 📂 latex
+ ┣ 📂 Code                 # Project source and data
+ ┃ ┣ 📂 code
+ ┃ ┃ ┣ 📂 include          # Header files (.h)
+ ┃ ┃ ┗ 📂 src              # Source files (.cpp)
+ ┃ ┣ 📂 data
+ ┃ ┃ ┣ 📂 output           # Generated allocation results
+ ┃ ┃ ┣ 📂 ranges           # Input variables and live ranges
+ ┃ ┃ ┗ 📂 registers        # Input configuration (K and modes)
+ ┃ ┣ 📂 scripts
+ ┃ ┃ ┗ 📜 run-default.sh   # Bash script for batch execution
+ ┃ ┣ 📜 CMakeLists.txt     # Build configuration
+ ┃ ┣ 📜 Doxyfile           # Doxygen settings
+ ┃ ┗ 📜 README.md          # Instructions and structure
+ ┣ 📜 presentation.pdf     # Slide deck for demo
+ ┗ 📜 presentation.html    # Original web-based presentation
+
+---
+
 ## Build
 
 Start from the root directory containing the `CMakeLists.txt`.

@@ -125,6 +125,8 @@ void runInteractiveMenu() {
         std::cout << "\n=== Compiler Register Allocation Tool ===\n"
                   << "1. Load datasets (Ranges & Registers)\n"
                   << "2. Run Allocation\n"
+                  << "3. Show Parsed Webs\n"
+                  << "4. Show Interference Graph\n"
                   << "0. Exit\n"
                   << "Choice: ";
 
@@ -162,6 +164,46 @@ void runInteractiveMenu() {
 
             std::cout << "\n--- Running Register Allocation ---\n";
             runPipeline(rangesInput, registersInput, outputInput);
+            break;
+        }
+
+        case 3: {
+            if (!dataLoaded) {
+                std::cout << "No files loaded yet. Please select option 1 first.\n";
+                break;
+            }
+            std::vector<Web> webs = Parser::parseWebs("../data/ranges/" + rangesInput);
+            std::cout << "\n--- Parsed Webs (" << webs.size() << ") ---\n";
+            for (const Web& w : webs) {
+                std::cout << w.id << " (" << w.variableName << "): ";
+                bool first = true;
+                for (int line : w.lines) {
+                    if (!first) std::cout << ", ";
+                    std::cout << line;
+                    first = false;
+                }
+                std::cout << "\n";
+            }
+            break;
+        }
+        
+        case 4: {
+            if (!dataLoaded) {
+                std::cout << "No files loaded yet. Please select option 1 first.\n";
+                break;
+            }
+            std::vector<Web> webs = Parser::parseWebs("../data/ranges/" + rangesInput);
+            Graph<std::string> graph = GraphBuilder::buildInterferenceGraph(webs);
+            
+            int numEdges = 0;
+            for (auto v : graph.getVertexSet()) {
+                numEdges += v->getAdj().size();
+            }
+            numEdges /= 2; // Dividimos por 2 porque o grafo adiciona arestas bidirecionais (A->B e B->A)
+
+            std::cout << "\n--- Interference Graph ---\n";
+            std::cout << "Nodes (Webs): " << graph.getNumVertex() << "\n";
+            std::cout << "Edges (Interferences): " << numEdges << "\n";
             break;
         }
 

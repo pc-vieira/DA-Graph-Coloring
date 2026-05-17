@@ -474,18 +474,21 @@ std<span class="op">::</span>map<span class="op">&lt;</span>std<span class="op">
   </div>
 
   <!-- ══════════════════════════════════════════════ SLIDE 8 — SPILLING -->
-  <div class="slide slide-body">
+<div class="slide slide-body">
     <div class="left-col">
       <div class="section-tag">T2.2 — Web Spilling</div>
       <h2>Spilling</h2>
       <div class="underline"></div>
       <ul>
-        <li>Quando a simplificação fica bloqueada, <strong>retira o web de maior grau</strong> (atribui à memória) e continua</li>
-        <li><strong>Heurística:</strong> maior grau = mais interferências = maior obstáculo para colorir</li>
-        <li>Permitido até <code>algoParam</code> spills; se exceder → falha</li>
-        <li>Actualiza graus dos vizinhos após cada spill</li>
-        <li><strong>Complexidade:</strong> O(K × (|V|² + |E|))</li>
+        <li>Quando a simplificação fica bloqueada, <strong>retira o web de maior grau</strong> (atribui à memória) e continua.</li>
+        <li>Permitido até <code>algoParam</code> spills; se exceder → falha.</li>
+        <li>Actualiza os graus dos vizinhos instantaneamente sem reconstruir o grafo.</li>
+        <li><strong>Complexidade:</strong> O(|V|² + |E|)</li>
       </ul>
+      <div style="background: #fff3ed; border-left: 4px solid #e85c0d; padding: 12px 18px; margin-top: 20px; border-radius: 0 4px 4px 0;">
+        <strong style="color: #e85c0d; display: block; margin-bottom: 6px; font-size: 0.9rem; text-transform: uppercase;">Justificação da Heurística</strong>
+        <span style="font-size: 0.95rem; color: #333; line-height: 1.5;">O algoritmo escolhe a variável com o <strong>maior grau de interferência (mais vizinhos ativos)</strong>. A lógica é que o nó com maior grau é o maior bloqueador cromático no grafo. Ao removê-lo para a memória, libertamos a tensão máxima sobre o maior número de vizinhos simultaneamente, maximizando as hipóteses de a simplificação prosseguir.</span>
+      </div>
     </div>
     <div class="right-col">
       <pre><span class="kw">else if</span> <span class="op">(</span>settings<span class="op">.</span>algorithm <span class="op">==</span> <span class="str">"spilling"</span>
@@ -513,18 +516,21 @@ std<span class="op">::</span>map<span class="op">&lt;</span>std<span class="op">
   </div>
 
   <!-- ══════════════════════════════════════════════ SLIDE 9 — SPLITTING -->
-  <div class="slide slide-body">
+<div class="slide slide-body">
     <div class="left-col">
       <div class="section-tag">T2.3 — Web Splitting</div>
       <h2>Splitting</h2>
       <div class="underline"></div>
       <ul>
-        <li>Em vez de descartar, <strong>divide o web de maior grau</strong> em dois sub-webs pela metade cronológica</li>
-        <li>Sub-webs menores têm menos vizinhos → grafo mais fácil de colorir</li>
-        <li>Devolve sinal <code>"__RESTART__"</code> → pipeline reconstrói o grafo de interferência e recomeça</li>
-        <li>Permitido até <code>algoParam</code> divisões</li>
+        <li>Em vez de descartar, <strong>divide o web problemático</strong> em dois sub-webs pela metade cronológica.</li>
+        <li>Devolve sinal <code>"__RESTART__"</code> → pipeline reconstrói o grafo de interferência.</li>
+        <li>Permitido até <code>algoParam</code> divisões.</li>
         <li><strong>Complexidade:</strong> O(K × (|W|²·|L| + |V|² + |E|))</li>
       </ul>
+      <div style="background: #fff3ed; border-left: 4px solid #e85c0d; padding: 12px 18px; margin-top: 20px; border-radius: 0 4px 4px 0;">
+        <strong style="color: #e85c0d; display: block; margin-bottom: 6px; font-size: 0.9rem; text-transform: uppercase;">Justificação da Heurística</strong>
+        <span style="font-size: 0.95rem; color: #333; line-height: 1.5;">O alvo do split é novamente o web com o <strong>maior grau</strong>. Ao cortar cronologicamente o live range mais intercetado, criamos duas variáveis distintas. Matematicamente, os vizinhos da primeira metade deixam de interferir com os vizinhos da segunda metade, diminuindo drasticamente o grau local daquela região e viabilizando a coloração sem perda de registos.</span>
+      </div>
     </div>
     <div class="right-col">
       <pre><span class="kw">if</span> <span class="op">(</span>settings<span class="op">.</span>algorithm <span class="op">==</span> <span class="str">"splitting"</span>
@@ -546,27 +552,25 @@ std<span class="op">::</span>map<span class="op">&lt;</span>std<span class="op">
 <span class="op">}</span></pre>
     </div>
   </div>
-
   <!-- ══════════════════════════════════════════════ SLIDE 10 — FREE MODE -->
-  <div class="slide slide-body">
+<div class="slide slide-body">
     <div class="left-col">
       <div class="section-tag">T2.4 — Algoritmo Livre</div>
       <h2>Free Mode</h2>
       <div class="underline"></div>
       <ul>
-        <li>Spilling <strong>sem limite</strong> de webs derramados</li>
-        <li><strong>Heurística diferente:</strong> seleciona o web com <strong>mais linhas</strong> (maior footprint), em vez do maior grau
-          <ul>
-            <li>Razão: web com muitas linhas interfere com mais vizinhos ao longo do tempo → mais valioso libertar</li>
-          </ul>
-        </li>
-        <li>Garante sempre uma alocação válida (no pior caso, todos vão para memória)</li>
+        <li>Modo de alocação agressiva: spilling <strong>sem limite</strong> de variáveis.</li>
+        <li>Garante sempre uma alocação válida (no limite, tudo na memória).</li>
         <li><strong>Complexidade:</strong> O(|V|² + |E|)</li>
       </ul>
+      <div style="background: #fff3ed; border-left: 4px solid #e85c0d; padding: 12px 18px; margin-top: 20px; border-radius: 0 4px 4px 0;">
+        <strong style="color: #e85c0d; display: block; margin-bottom: 6px; font-size: 0.9rem; text-transform: uppercase;">Justificação da Heurística de Spill</strong>
+        <span style="font-size: 0.95rem; color: #333; line-height: 1.5;">Em vez do grau, usamos uma heurística temporal: selecionamos o web com o <strong>maior footprint (maior número de linhas ativas)</strong>. Num modo sem limites restritos, varrer para a memória a variável que está viva durante mais tempo é altamente eficiente, pois essa variável cruza o tempo de vida de dezenas de outras variáveis locais menores, libertando instantaneamente múltiplas pressões cruzadas.</span>
+      </div>
     </div>
     <div class="right-col">
       <pre><span class="kw">if</span> <span class="op">(</span>settings<span class="op">.</span>algorithm <span class="op">==</span> <span class="str">"free"</span><span class="op">) {</span>
-    <span class="cm">// Heurística: maior número de linhas</span>
+    <span class="cm">// Heurística: maior número de linhas ativas</span>
     <span class="kw">for</span> <span class="op">(</span><span class="kw">auto</span> v <span class="op">:</span> graph<span class="op">.</span><span class="fn">getVertexSet</span><span class="op">()) {</span>
         <span class="kw">if</span> <span class="op">(!</span>active<span class="op">[</span>id<span class="op">])</span> <span class="kw">continue</span><span class="op">;</span>
         <span class="kw">int</span> lineCount <span class="op">=</span> <span class="num">0</span><span class="op">;</span>
@@ -579,14 +583,13 @@ std<span class="op">::</span>map<span class="op">&lt;</span>std<span class="op">
         <span class="op">}</span>
     <span class="op">}</span>
 <span class="op">}</span>
-<span class="cm">// Spill sem verificar limite (modo livre)</span>
+<span class="cm">// Spill sem verificar limite</span>
 active<span class="op">[</span>problematicNode<span class="op">] =</span> <span class="kw">false</span><span class="op">;</span>
 activeCount<span class="op">--; </span>currentSpills<span class="op">++;</span></pre>
     </div>
   </div>
-
   <!-- ══════════════════════════════════════════════ SLIDE 11 — INTERFACE -->
-  <div class="slide slide-body">
+<div class="slide slide-body">
     <div class="left-col">
       <div class="section-tag">T1.1 — Interface</div>
       <h2>Interface</h2>
@@ -594,45 +597,37 @@ activeCount<span class="op">--; </span>currentSpills<span class="op">++;</span><
       <ul>
         <li><strong>Modo interativo:</strong>
           <ul>
-            <li>1. Carregar ficheiros (ranges + registers)</li>
-            <li>2. Correr alocação → escolher ficheiro de saída</li>
-            <li>0. Sair</li>
+            <li>Exposição total de etapas para visualização (Parsed Webs e Interference Graph).</li>
+            <li>Resumo do status de alocação em tempo real.</li>
           </ul>
         </li>
-        <li><strong>Modo batch:</strong><br>
+        <li><strong>Modo batch (Silencioso):</strong><br>
           <code>myProg -b ranges.txt registers.txt output.txt</code>
         </li>
-        <li>Erros enviados para <code>stderr</code></li>
-        <li>Resultado escrito no ficheiro de saída com formato normalizado</li>
+        <li>Erros rigorosamente isolados no canal <code>stderr</code>, protegendo pipelines de CI/CD.</li>
       </ul>
     </div>
     <div class="right-col">
-      <pre><span class="cm">// Batch mode</span>
-<span class="kw">if</span> <span class="op">(</span>argc <span class="op">==</span> <span class="num">5</span> <span class="op">&amp;&amp;</span> std<span class="op">::</span><span class="fn">strcmp</span><span class="op">(</span>argv<span class="op">[</span><span class="num">1</span><span class="op">],</span> <span class="str">"-b"</span><span class="op">) ==</span> <span class="num">0</span><span class="op">) {</span>
-    <span class="fn">runBatchMode</span><span class="op">(</span>argv<span class="op">[</span><span class="num">2</span><span class="op">],</span> argv<span class="op">[</span><span class="num">3</span><span class="op">],</span> argv<span class="op">[</span><span class="num">4</span><span class="op">]);</span>
-<span class="op">}</span>
-
-<span class="cm">// Menu interativo</span>
+      <pre><span class="cm">// Menu interativo final</span>
 <span class="op">===</span> Compiler Register Allocation Tool <span class="op">===</span>
 <span class="num">1</span><span class="op">.</span> Load datasets <span class="op">(</span>Ranges <span class="op">&amp;</span> Registers<span class="op">)</span>
 <span class="num">2</span><span class="op">.</span> Run Allocation
+<span class="num">3</span><span class="op">.</span> Show Parsed Webs
+<span class="num">4</span><span class="op">.</span> Show Interference Graph
 <span class="num">0</span><span class="op">.</span> Exit
 Choice<span class="op">:</span> _
 
-<span class="cm">// Exemplo de output</span>
-webs<span class="op">:</span> <span class="num">3</span>
-web0<span class="op">:</span> <span class="num">7</span><span class="op">+,</span><span class="num">8</span><span class="op">,</span><span class="num">9</span><span class="op">,</span><span class="num">10</span><span class="op">-</span>
-web1<span class="op">:</span> <span class="num">1</span><span class="op">+,</span><span class="num">2</span><span class="op">,</span><span class="num">3</span><span class="op">,</span><span class="num">4</span><span class="op">,</span><span class="num">5</span><span class="op">,</span><span class="num">6</span><span class="op">-</span>
-web2<span class="op">:</span> <span class="num">9</span><span class="op">+,</span><span class="num">10</span><span class="op">,</span><span class="num">11</span><span class="op">,</span><span class="num">12</span><span class="op">,</span><span class="num">13</span><span class="op">,</span><span class="num">14</span><span class="op">-,</span><span class="num">20</span><span class="op">+</span>
-registers<span class="op">:</span> <span class="num">2</span>
-r0<span class="op">:</span> web0
-r0<span class="op">:</span> web2
-r1<span class="op">:</span> web1</pre>
+<span class="cm">// Exemplo de Resumo de Output</span>
+<span class="op">[</span>Allocation Summary<span class="op">]</span>
+Registers Used<span class="op">:</span> <span class="num">2</span>
+Spilled Webs<span class="op">:</span>   <span class="num">1</span>
+Status<span class="op">:</span>         SUCCESS WITH SPILLS
+
+Successfully wrote final allocation to <span class="op">...</span></pre>
     </div>
   </div>
-
   <!-- ══════════════════════════════════════════════ SLIDE 12 — COMPLEXIDADES -->
-  <div class="slide">
+<div class="slide">
     <div class="full-title" style="margin-bottom:8px;">
       <div class="section-tag">Análise</div>
       <h2>Complexidade Temporal</h2>
@@ -646,13 +641,12 @@ r1<span class="op">:</span> web1</pre>
         <tr><td><strong>Parser</strong> — parseWebs()</td><td>O(N × |W| × |L|)</td><td>N linhas, cada uma comparada com todos os webs</td></tr>
         <tr><td><strong>GraphBuilder</strong> — buildInterferenceGraph()</td><td>O(|W|² × |L|)</td><td>Todos os pares de webs; interseção de sets</td></tr>
         <tr><td><strong>basic</strong> — Greedy Coloring</td><td>O(|V|² + |E|)</td><td>Simplificação + coloração sobre o grafo</td></tr>
-        <tr><td><strong>spilling</strong></td><td>O(K × (|V|² + |E|))</td><td>K iterações de spill + recoloração</td></tr>
-        <tr><td><strong>splitting</strong></td><td>O(K × (|W|²·|L| + |V|² + |E|))</td><td>K rebuilds do grafo após cada split</td></tr>
-        <tr><td><strong>free</strong></td><td>O(|V|² + |E|)</td><td>Spilling ilimitado mas numa só passagem</td></tr>
+        <tr><td><strong>spilling</strong></td><td>O(|V|² + |E|)</td><td>Atualização de vizinhos *in-place*. Não reconstrói o grafo.</td></tr>
+        <tr><td><strong>splitting</strong></td><td>O(K × (|W|²·|L| + |V|² + |E|))</td><td>K rebuilds completos ao grafo via sinal __RESTART__</td></tr>
+        <tr><td><strong>free</strong></td><td>O(|V|² + |E|)</td><td>Spilling heurístico otimizado numa só passagem</td></tr>
       </tbody>
     </table>
   </div>
-
   <!-- ══════════════════════════════════════════════ SLIDE 13 — DIFICULDADES -->
   <div class="slide active" style="display:none;">
     <div style="display:flex;align-items:flex-start;height:100%;">

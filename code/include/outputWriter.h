@@ -59,7 +59,7 @@ public:
                 maxRegisterUsed = pair.second;
             }
         }
-        
+
         bool totalFailure = (spilledCount == allocation.size());
         int totalRegistersUsed = maxRegisterUsed + 1;
 
@@ -76,7 +76,20 @@ public:
         }
 
         outFile.close();
-        std::cout << "Successfully wrote final allocation to " << "../data/output/" + filename << std::endl;
+        
+        std::cout << "\n[Allocation Summary]\n";
+        std::cout << "Registers Used: " << totalRegistersUsed << "\n";
+        std::cout << "Spilled Webs:   " << spilledCount << "\n";
+        
+        if (totalFailure) {
+            std::cout << "Status:         TOTAL FAILURE (Not enough registers)\n";
+        } else if (spilledCount > 0) {
+            std::cout << "Status:         SUCCESS WITH SPILLS\n";
+        } else {
+            std::cout << "Status:         PERFECT SUCCESS\n";
+        }
+        
+        std::cout << "\nSuccessfully wrote final allocation to ../data/output/" << filename << std::endl;
     }
 };
 
