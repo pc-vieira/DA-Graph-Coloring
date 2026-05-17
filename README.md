@@ -6,10 +6,11 @@ The final delivery is structured as follows:
 
 ```text
 📦 DA2026_PRJ2_T<Class>_G<Group>
- ┣ 📂 Documentation        # Doxygen documentation
- ┃ ┣ 📂 html
- ┃ ┗ 📂 latex
- ┣ 📂 Code                 # Project source and data
+ ┣ 📂 Documentation
+ ┃ ┣ 📂 html               # Doxygen HTML output
+ ┃ ┣ 📜 Doxyfile           # Doxygen settings
+ ┃ ┗ 📜 README.md          # Instructions and structure
+ ┣ 📂 Code
  ┃ ┣ 📂 code
  ┃ ┃ ┣ 📂 include          # Header files (.h)
  ┃ ┃ ┗ 📂 src              # Source files (.cpp)
@@ -18,12 +19,9 @@ The final delivery is structured as follows:
  ┃ ┃ ┣ 📂 ranges           # Input variables and live ranges
  ┃ ┃ ┗ 📂 registers        # Input configuration (K and modes)
  ┃ ┣ 📂 scripts
- ┃ ┃ ┗ 📜 run-default.sh   # Bash script for batch execution
- ┃ ┣ 📜 CMakeLists.txt     # Build configuration
- ┃ ┣ 📜 Doxyfile           # Doxygen settings
- ┃ ┗ 📜 README.md          # Instructions and structure
- ┣ 📜 presentation.pdf     # Slide deck for demo
- ┗ 📜 presentation.html    # Original web-based presentation
+ ┃ ┃ ┗ 📜 run-default.sh   # Bash script for default datasets
+ ┃ ┗ 📜 CMakeLists.txt     # Build configuration
+ ┗ 📜 presentation.pdf     # Slide deck for demo
 
 ---
 
