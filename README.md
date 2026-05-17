@@ -28,13 +28,13 @@ cmake --build .
 **Linux / macOS**
 ```bash
 cd build
-./DA_Register_Allocation
+./DA-GRAPH-COLORING
 ```
 
 **Windows**
 ```bat
 cd build
-.\DA_Register_Allocation.exe
+.\DA-GRAPH-COLORING.exe
 ```
 
 ---
@@ -44,13 +44,13 @@ cd build
 **Linux / macOS**
 ```bash
 cd build
-./DA_Register_Allocation -b <range path> <register path> <output path>
+./DA-GRAPH-COLORING -b <range path> <register path> <output path>
 ```
 
 **Windows**
 ```bat
 cd build
-.\DA_Register_Allocation.exe -b <range path> <register path> <output path>
+.\DA-GRAPH-COLORING.exe -b <range path> <register path> <output path>
 ```
 
 Note: When using the command-line batch parameters, provide the full relative paths (e.g., `../data/ranges/ranges1.txt`).

@@ -35,7 +35,7 @@ for ranges_file in ../data/ranges/*.txt; do
         out_file="../data/output/$out_filename"
 
         echo "Processing: $filename + $reg_filename -> $out_filename"
-        ../build/DA_Register_Allocation -b "$ranges_file" "$reg_file" "$out_file"
+        ../build/DA-GRAPH-COLORING -b "$ranges_file" "$reg_file" "$out_file"
     else
         echo "⚠️ Warning: No register mapping found for $filename"
     fi
