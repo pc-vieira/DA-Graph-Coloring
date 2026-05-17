@@ -93,6 +93,18 @@ public:
                     for (auto v : graph.getVertexSet()) {
                         std::string id = v->getInfo();
                         if (active[id] && degrees[id] > maxMetric) {
+                            
+                            if (settings.algorithm == "splitting") {
+                                int lineCount = 0;
+                                for (const Web& w : webs) {
+                                    if (w.id == id) {
+                                        lineCount = w.lines.size();
+                                        break;
+                                    }
+                                }
+                                if (lineCount < 2) continue;
+                            }
+                            
                             maxMetric = degrees[id];
                             problematicNode = id;
                         }
