@@ -44,16 +44,14 @@ cd build
 **Linux / macOS**
 ```bash
 cd build
-./DA-GRAPH-COLORING -b <range path> <register path> <output path>
+./DA-GRAPH-COLORING -b <range file name> <register file name> <output file name>
 ```
 
 **Windows**
 ```bat
 cd build
-.\DA-GRAPH-COLORING.exe -b <range path> <register path> <output path>
+.\DA-GRAPH-COLORING.exe -b <range file name> <register file name> <output file name>
 ```
-
-Note: When using the command-line batch parameters, provide the full relative paths (e.g., `../data/ranges/ranges1.txt`).
 
 ---
 
@@ -65,13 +63,13 @@ This only generates the output for the 6 given instances.
 **Linux / macOS**
 ```bash
 cd scripts
-bash batch.sh
+bash run-default.sh
 ```
 
 **Windows** (requires Git Bash or WSL)
 ```bash
 cd scripts
-bash batch.sh
+bash run-default.sh
 ```
 
-Without Git Bash or WSL, open `batch.sh` and run the commands it contains manually in a terminal.
+Without Git Bash or WSL, open `run-default.sh` and run the commands it contains manually in a terminal.

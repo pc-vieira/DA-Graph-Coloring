@@ -71,7 +71,7 @@ static void runPipeline(
     const std::string& outputFile,
     bool verbose = true)
 {
-    AllocSettings settings = parseRegistersFile(registersFile);
+    AllocSettings settings = parseRegistersFile("../data/registers/" + registersFile);
     
     // Explicitly reject 0 or missing registers
     if (settings.numRegisters <= 0) {
@@ -86,9 +86,9 @@ static void runPipeline(
         return;
     }
 
-    std::vector<Web> webs = Parser::parseWebs(rangesFile);
+    std::vector<Web> webs = Parser::parseWebs("../data/ranges/" + rangesFile);
     if (webs.empty()) {
-        std::cerr << "Error: No webs parsed from " << rangesFile << "\n";
+        std::cerr << "Error: No webs parsed from " << "../data/ranges/" + rangesFile << "\n";
         return;
     }
 
@@ -121,9 +121,8 @@ void runBatchMode(const std::string& rangesFile, const std::string& registersFil
 }
 
 void runInteractiveMenu() {
-    std::string rangesFile;
-    std::string registersFile;
     bool dataLoaded = false;
+    std::string rangesInput, registersInput;
 
     while (true) {
         std::cout << "\n=== Compiler Register Allocation Tool ===\n"
@@ -143,18 +142,14 @@ void runInteractiveMenu() {
 
         switch (choice) {
         case 1: {
-            std::string rangesInput, registersInput;
-            
             std::cout << "Enter Ranges filename (e.g., ranges1.txt): ";
             std::cin >> rangesInput;
-            rangesFile = "../data/ranges/" + rangesInput;
             
             std::cout << "Enter Registers filename (e.g., registers2.txt): ";
             std::cin >> registersInput;
-            registersFile = "../data/registers/" + registersInput;
             
             dataLoaded = true;
-            std::cout << "Paths loaded as:\n  -> " << rangesFile << "\n  -> " << registersFile << "\n";
+            std::cout << "Paths loaded as:\n  -> " << "../data/ranges/" + rangesInput << "\n  -> " << "../data/registers/" + registersInput << "\n";
             break;
         }
 
@@ -165,13 +160,11 @@ void runInteractiveMenu() {
             }
             
             std::string outputInput;
-            std::string outputFile;
             std::cout << "Enter Output filename (e.g., interactive_alloc.txt): ";
             std::cin >> outputInput;
-            outputFile = "../data/output/" + outputInput;
 
             std::cout << "\n--- Running Register Allocation ---\n";
-            runPipeline(rangesFile, registersFile, outputFile, true);
+            runPipeline(rangesInput, registersInput, outputInput, true);
             break;
         }
 

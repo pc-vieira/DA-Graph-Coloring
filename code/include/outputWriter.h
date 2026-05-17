@@ -15,15 +15,15 @@ class OutputWriter {
 public:
     /**
      * @brief Writes the web summaries and their assigned registers/memory.
-     * @param filename Target output file path.
+     * @param filename Target output file name.
      * @param webs The final vector of webs (including any split derivatives).
      * @param allocation The map linking Web IDs to their assigned Register (or -1 for Memory).
      * @complexity $O(|W| \times |L|)$ where $|W|$ is the number of webs and $|L|$ is the number of lines per web.
      */
     static void writeAllocation(const std::string& filename, const std::vector<Web>& webs, const std::map<std::string, int>& allocation) {
-        std::ofstream outFile(filename);
+        std::ofstream outFile("../data/output/" + filename);
         if (!outFile.is_open()) {
-            std::cerr << "Error: Could not open output file " << filename << std::endl;
+            std::cerr << "Error: Could not open output file " << "../data/output/" + filename << std::endl;
             return;
         }
 
@@ -77,7 +77,7 @@ public:
         }
 
         outFile.close();
-        std::cout << "Successfully wrote final allocation to " << filename << std::endl;
+        std::cout << "Successfully wrote final allocation to " << "../data/output/" + filename << std::endl;
     }
 };
 

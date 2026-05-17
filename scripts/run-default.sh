@@ -30,12 +30,9 @@ for ranges_file in ../data/ranges/*.txt; do
     if [ -n "$reg_filename" ]; then
         # E.g., turns ranges1.txt into allocation1.txt
         out_filename="allocation${filename#ranges}" 
-        
-        reg_file="../data/registers/$reg_filename"
-        out_file="../data/output/$out_filename"
 
         echo "Processing: $filename + $reg_filename -> $out_filename"
-        ../build/DA-GRAPH-COLORING -b "$ranges_file" "$reg_file" "$out_file"
+        ../build/DA-GRAPH-COLORING -b "$filename" "$reg_filename" "$out_filename"
     else
         echo "⚠️ Warning: No register mapping found for $filename"
     fi
